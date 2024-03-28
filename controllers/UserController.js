@@ -5,6 +5,14 @@ class UserController {
         this.tableEl = document.getElementById(tableId);
 
         this.onSubmit()
+        this.onEdit()
+    }
+
+    onEdit() {
+        document.querySelector("#box-user-update .btn-cancel")
+            .addEventListener("click", e => {
+                this.ShowPanelCreate();
+            });
     }
 
     onSubmit() {
@@ -97,6 +105,8 @@ class UserController {
     addLine(dataUser) {
         let tr = document.createElement('tr');
 
+        tr.dataset.user = JSON.stringify(dataUser);
+
         tr.innerHTML = `          
             <td><img src="${dataUser.photo}" alt="User Image" class="img-circle img-sm"></td>
             <td>${dataUser.name}</td>
@@ -104,11 +114,49 @@ class UserController {
             <td>${(dataUser.admin) ? 'Sim' : 'Não'} </td>
             <td>${Utils.dateFormat(dataUser.register)}</td>
             <td>
-            <button type="button" class="btn btn-primary btn-xs btn-flat">Editar</button>
+            <button type="button" class="btn btn-primary btn-edit btn-xs btn-flat">Editar</button>
             <button type="button" class="btn btn-danger btn-xs btn-flat">Excluir</button>
             </td>
         `;
 
+        tr.querySelector(".btn-edit").addEventListener("click", e => {
+
+            let user = JSON.parse(tr.dataset.user);
+            this.ShowPanelUpdate();
+
+        });
+
         this.tableEl.appendChild(tr);
+
+        this.updateCount()
     }
+
+    ShowPanelCreate() {
+        document.querySelector("#box-user-create").style.display = "block";
+        document.querySelector("#box-user-update").style.display = "none";
+    }
+
+    ShowPanelUpdate() {
+        document.querySelector("#box-user-create").style.display = "none";
+        document.querySelector("#box-user-update").style.display = "block";
+    }
+
+    updateCount() {
+
+        let numberUsers = 0;
+        let numberAdmin = 0;
+
+        [...this.tableEl.children].forEach(tr => {
+            numberUsers++;
+
+            let user = JSON.parse(tr.dataset.user);
+
+            if (user._admin)
+                numberAdmin++;
+        })
+
+        document.querySelector("#numbers-users").innerHTML = numberUsers;
+        document.querySelector("#numbers-users-admin").innerHTML = numberAdmin;
+    }
+
 }
