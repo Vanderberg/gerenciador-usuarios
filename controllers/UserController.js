@@ -1,12 +1,12 @@
 class UserController {
 
     constructor(formId, formUpdateEl, tableId) {
-        this.formEl = document.getElementById(formId);
+        this.formCreateEl = document.getElementById(formId);
         this.formUpdateEl = document.getElementById(formUpdateEl);
         this.tableEl = document.getElementById(tableId);
 
-        this.onSubmit()
-        this.onEdit()
+        this.onSubmit();
+        this.onEdit();
     }
 
     onEdit() {
@@ -27,44 +27,66 @@ class UserController {
             let index = this.formUpdateEl.dataset.trIndex;
             let tr = this.tableEl.rows[index];
 
-            tr.dataset.user = JSON.stringify(values);
+            let userOld = JSON.parse(tr.dataset.user);
 
-            tr.innerHTML = `          
-                <td><img src="${values.photo}" alt="User Image" class="img-circle img-sm"></td>
-                <td>${values.name}</td>
-                <td>${values.email}</td>
-                <td>${(values.admin) ? 'Sim' : 'Não'} </td>
-                <td>${Utils.dateFormat(values.register)}</td>
-                <td>
-                <button type="button" class="btn btn-primary btn-edit btn-xs btn-flat">Editar</button>
-                <button type="button" class="btn btn-danger btn-xs btn-flat">Excluir</button>
-                </td>
-            `;
+            let result = Object.assign({}, userOld, values);
 
-            this.addEventsTR(tr);
-            this.updateCount();
+            this.getPhoto(this.formUpdateEl).then(
+                (content) => {
+
+                    if (!values.photo)
+                        result._photo = userOld._photo;
+                    else
+                        result._photo = content;
+
+                    tr.dataset.user = JSON.stringify(result);
+
+                    tr.innerHTML = `          
+                    <td><img src="${result._photo}" alt="User Image" class="img-circle img-sm"></td>
+                    <td>${result._name}</td>
+                    <td>${result._email}</td>
+                    <td>${(result._admin) ? 'Sim' : 'Não'} </td>
+                    <td>${Utils.dateFormat(result._register)}</td>
+                    <td>
+                    <button type="button" class="btn btn-primary btn-edit btn-xs btn-flat">Editar</button>
+                    <button type="button" class="btn btn-danger btn-xs btn-flat">Excluir</button>
+                    </td>
+                `;
+
+                    this.addEventsTR(tr);
+                    this.updateCount();
+
+                    this.formUpdateEl.reset()
+                    btnSubmit.disabled = false;
+
+                    this.ShowPanelCreate();
+                },
+                (e) => {
+                    console.error(e);
+                }
+            );
         });
     }
 
     onSubmit() {
-        this.formEl.addEventListener("submit", event => {
+        this.formCreateEl.addEventListener("submit", event => {
 
             event.preventDefault();
 
-            let btnSubmit = this.formEl.querySelector("[type=submit]");
+            let btnSubmit = this.formCreateEl.querySelector("[type=submit]");
 
             btnSubmit.disabled = true;
 
-            let values = this.getValues(this.formEl);
+            let values = this.getValues(this.formCreateEl);
 
             if (!values)
                 return false;
 
-            this.getPhoto().then(
+            this.getPhoto(this.formCreateEl).then(
                 (content) => {
                     values.photo = content;
                     this.addLine(values);
-                    this.formEl.reset()
+                    this.formCreateEl.reset()
                     btnSubmit.disabled = false;
                 },
                 (e) => {
@@ -74,12 +96,12 @@ class UserController {
         })
     }
 
-    getPhoto() {
+    getPhoto(formEl) {
 
         return new Promise((resolve, reject) => {
             let fileReader = new FileReader();
 
-            let elements = [...this.formEl.elements].filter(item => {
+            let elements = [...formEl.elements].filter(item => {
                 if (item.name === 'photo')
                     return item;
             });
@@ -161,12 +183,11 @@ class UserController {
         tr.querySelector(".btn-edit").addEventListener("click", e => {
 
             let json = JSON.parse(tr.dataset.user);
-            let form = document.querySelector("#form-user-update");
 
-            form.dataset.trIndex = tr.sectionRowIndex;
+            this.formUpdateEl.dataset.trIndex = tr.sectionRowIndex;
 
             for (let name in json) {
-                let field = form.querySelector("[name=" + name.replace("_", "") + "]");
+                let field = this.formUpdateEl.querySelector("[name=" + name.replace("_", "") + "]");
 
                 if (field) {
 
@@ -176,7 +197,7 @@ class UserController {
                             break;
 
                         case 'radio':
-                            field = form.querySelector("[name=" + name.replace("_", "") + "][value=" + json[name] + "]");
+                            field = this.formUpdateEl.querySelector("[name=" + name.replace("_", "") + "][value=" + json[name] + "]");
                             field.checked = true;
                             break;
 
@@ -192,6 +213,7 @@ class UserController {
                 }
             }
 
+            this.formUpdateEl.querySelector(".photo").src = json._photo;
             this.ShowPanelUpdate();
         });
     }
